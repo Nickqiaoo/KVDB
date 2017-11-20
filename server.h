@@ -28,7 +28,7 @@ class MemcacheServer : noncopyable {
     void start();
     void stop();
 
-    time_t starttime() const { return startTime_; }
+    time_t startTime() const { return startTime_; }
 
     bool storeItem(const ItemPtr& item, Item::UpdatePolicy policy, bool* exits);
     ConstItemPtr getItem(const ConstItemPtr& key) const;

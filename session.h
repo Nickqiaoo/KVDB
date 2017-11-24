@@ -3,17 +3,15 @@
 
 #include "item.h"
 
+#include <muduo/base/Logging.h>
 #include <muduo/net/TcpConnection.h>
-#include<muduo/base/Logging.h>
 
 #include <boost/tokenizer.hpp>
-
-#include <functional>
 
 using muduo::string;
 
 class MemcacheServer;
-class Session : noncopyable, public std::enable_shared_from_this<Session> {
+class Session : QYJ::noncopyable, public std::enable_shared_from_this<Session> {
    public:
     Session(MemcacheServer* owner, const muduo::net::TcpConnectionPtr& conn)
         : owner_(owner),
@@ -46,8 +44,8 @@ class Session : noncopyable, public std::enable_shared_from_this<Session> {
         kDiscardValue,
     };
     enum Protocol {
-        kAscii, //字节协议
-        kBinary,    //二进制协议
+        kAscii,   //字节协议
+        kBinary,  //二进制协议
         kAuto,
     };
     void onMessage(const muduo::net::TcpConnectionPtr& conn,

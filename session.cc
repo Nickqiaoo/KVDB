@@ -7,7 +7,7 @@ using namespace muduo::net;
 static bool isBinaryProtocol(uint8_t firstByte) { return firstByte == 0x80; }
 
 const int kLongestKeySize = 250;
-string Session::kLongestKey(kLongestKey, 'x');
+string Session::kLongestKey(kLongestKeySize, 'x');
 
 template <typename InputIterator, typename Token>
 bool Session::SpaceSeparator::operator()(InputIterator& next, InputIterator end,
@@ -159,123 +159,127 @@ bool Session::processRequest(StringPiece request) {
     if (command_ == "set" || command_ == "add" || command_ == "replace" ||
         command_ == "append" || command_ == "prepend" || command_ == "cas") {
         return doUpdate(beg, tok.end());
-    } else if (command_=="get"||command_=="gets"){
-        bool cas=command_=="gets";
-        while(beg!=tok.end()){
-            StringPiece key=*beg;
-            bool good=key.size()<=kLongestKeySize;
-            if(!good){
+    } else if (command_ == "get" || command_ == "gets") {
+        bool cas = command_ == "gets";
+        while (beg != tok.end()) {
+            StringPiece key = *beg;
+            bool good = key.size() <= kLongestKeySize;
+            if (!good) {
                 reply("CLIENT_ERROR bad command line forman\r\n");
                 return true;
             }
             needle_->resetKey(key);
-            ConstItemPtr item=owner_->getItem(needle_);
+            ConstItemPtr item = owner_->getItem(needle_);
             ++beg;
-            if(item){
-                item->output(&outputBuf_,cas);
+            if (item) {
+                item->output(&outputBuf_, cas);
             }
         }
         outputBuf_.append("END\r\n");
-        if(conn_->outputBuffer()->writableBytes()>65536+outputBuf_.readableBytes()){
-            LOG_DEBUG<<"shrink output buffer from"<<conn_->outputBuffer()->internalCapacity();
-            conn_->outputBuffer()->shrink(65536+outputBuf_.readableBytes());
+        if (conn_->outputBuffer()->writableBytes() >
+            65536 + outputBuf_.readableBytes()) {
+            LOG_DEBUG << "shrink output buffer from"
+                      << conn_->outputBuffer()->internalCapacity();
+            conn_->outputBuffer()->shrink(65536 + outputBuf_.readableBytes());
         }
         conn_->send(&outputBuf_);
-    }else if(command_=="version"){
+    } else if (command_ == "version") {
         reply("version 0.01 muduo\r\n");
-    }else if(command_=="shutdown"){
+    } else if (command_ == "shutdown") {
         conn_->shutdown();
         owner_->stop();
-    }else{
+    } else {
         reply("ERROR\r\n");
-        LOG_INFO<<"Unknown command: "<<command_;
+        LOG_INFO << "Unknown command: " << command_;
     }
     return true;
 }
-void Session::resetRequest(){
+void Session::resetRequest() {
     command_.clear();
-    noreply_=false;
-    policy_=Item::kInvalid;
+    noreply_ = false;
+    policy_ = Item::kInvalid;
     currItem_.reset();
-    bytesToDiscard_=0;
+    bytesToDiscard_ = 0;
 }
 
-void Session::reply(muduo::StringPiece msg){
-    if(!noreply_){
-        conn_->send(msg.data(),msg.size());
+void Session::reply(muduo::StringPiece msg) {
+    if (!noreply_) {
+        conn_->send(msg.data(), msg.size());
     }
 }
 
-bool Session::doUpdate(Session::Tokenizer::iterator& beg,Session::Tokenizer::iterator end){
-    if(command_=="set")
-        policy_=Item::kSet;
-    else if(command_=="add")
-        policy_=Item::kAdd;
-    else if(command_=="replace")
-        policy_=Item::kReplace;
-    else if(command_=="append")
-        policy_=Item::kAppend;
-    else if(command_=="prepend")
-        policy_=Item::kPrepend;
-    else if(command_=="cas")
-        policy_=Item::kCas;
-    else 
+bool Session::doUpdate(Session::Tokenizer::iterator& beg,
+                       Session::Tokenizer::iterator end) {
+    if (command_ == "set")
+        policy_ = Item::kSet;
+    else if (command_ == "add")
+        policy_ = Item::kAdd;
+    else if (command_ == "replace")
+        policy_ = Item::kReplace;
+    else if (command_ == "append")
+        policy_ = Item::kAppend;
+    else if (command_ == "prepend")
+        policy_ = Item::kPrepend;
+    else if (command_ == "cas")
+        policy_ = Item::kCas;
+    else
         assert(false);
 
-    StringPiece key=(*beg);
-    bool good=key.size()<=kLongestKeySize;
+    StringPiece key = (*beg);
+    bool good = key.size() <= kLongestKeySize;
 
-    uint32_t flags=0;
-    time_t exptime=1;
-    int bytes=-1;
-    uint64_t cas=0;
+    uint32_t flags = 0;
+    time_t exptime = 1;
+    int bytes = -1;
+    uint64_t cas = 0;
 
-    Reader r(beg,end);
-    good=good&&r.read(&flags)&&r.read(&exptime)&&r.read(&bytes);
+    Reader r(beg, end);
+    good = good && r.read(&flags) && r.read(&exptime) && r.read(&bytes);
 
-    int rel_exptime =static_cast<int>(exptime);
-    if(exptime>60*60*24*30){
-        rel_exptime=static_cast<int>(exptime-owner_->startTime());
-        if(rel_exptime<1)
-            rel_exptime=1;
-    }else{
-
+    int rel_exptime = static_cast<int>(exptime);
+    if (exptime > 60 * 60 * 24 * 30) {
+        rel_exptime = static_cast<int>(exptime - owner_->startTime());
+        if (rel_exptime < 1) rel_exptime = 1;
+    } else {
     }
-    if(good&&policy_==Item::kCas){
-        good=r.read(&cas);
+    if (good && policy_ == Item::kCas) {
+        good = r.read(&cas);
     }
-    if(!good){
+    if (!good) {
         reply("CLIENT_ERROR bad command line format\r\n");
         return true;
     }
-    if(bytes>1024*1024){
+    if (bytes > 1024 * 1024) {
         reply("SERVER_ERROR object too large for cache\r\n");
         needle_->resetKey(key);
         owner_->deleteItem(needle_);
-        bytesToDiscard_=bytes+2;
-        state_=kDiscardValue;
+        bytesToDiscard_ = bytes + 2;
+        state_ = kDiscardValue;
         return false;
-    }else{
-        currItem_=Item::makeItem(key,flags,rel_exptime,bytes+2,cas);
-        state_=kReceiveValue;
+    } else {
+        currItem_ = Item::makeItem(key, flags, rel_exptime, bytes + 2, cas);
+        state_ = kReceiveValue;
         return false;
     }
 }
 
-void Session::doDelete(Session::Tokenizer::iterator& beg,Session::Tokenizer::iterator end){
-    assert(command_=="delete");
-    StringPiece key=*beg;
-    bool good=key.size()<=kLongestKeySize;
+void Session::doDelete(Session::Tokenizer::iterator& beg,
+                       Session::Tokenizer::iterator end) {
+    assert(command_ == "delete");
+    StringPiece key = *beg;
+    bool good = key.size() <= kLongestKeySize;
     ++beg;
-    if(!good){
+    if (!good) {
         reply("CLIENT_ERROR bad command line format\r\n");
-    }else if(beg!=end&&*beg!="0"){
-        reply("CLIENT_ERROR bad command line format. Usage: delete <key> [noreply]\r\n");
-    }else{
+    } else if (beg != end && *beg != "0") {
+        reply(
+            "CLIENT_ERROR bad command line format. Usage: delete <key> "
+            "[noreply]\r\n");
+    } else {
         needle_->resetKey(key);
-        if(owner_->deleteItem(needle_)){
+        if (owner_->deleteItem(needle_)) {
             reply("DELETED\r\n");
-        }else{
+        } else {
             reply("NOT_FOUND\r\n");
         }
     }

@@ -23,7 +23,7 @@ struct noncopyable {
     const noncopyable& operator=(const noncopyable&) = delete;
 };
 
-class Client : noncopyable {
+class Client : ::noncopyable {
    public:
     enum Operation {
         kGet,
@@ -93,7 +93,7 @@ class Client : noncopyable {
         }
         if (acked_ == requests_) {
             conn_->shutdown();
-            finished_->countDown();
+            //finished_->countDown();
         }
     }
     void fill(Buffer* buf) {
@@ -158,7 +158,7 @@ int main(int argc, char* argv[]) {
     LOG_WARN << "Connecting" << serverAddr.toIpPort();
 
     EventLoop loop;
-    EventLoopThreadPool pool(&loop);
+    EventLoopThreadPool pool(&loop,"bench-memcache");
     int valuelen = 100;
     Client::Operation op = set ? Client::kSet : Client::kGet;
 
@@ -174,7 +174,8 @@ int main(int argc, char* argv[]) {
     std::vector<std::unique_ptr<Client>> holder;
     for (int i = 0; i < clients; ++i) {
         snprintf(buf, sizeof buf, "%d-", i + 1);
-        holder.push_back(std::make_unique<Client>(
+        //
+        holder.emplace_back(new Client(
             buf, pool.getNextLoop(), serverAddr, op, requests, keys, valuelen,
             &connected, &finished));
     }

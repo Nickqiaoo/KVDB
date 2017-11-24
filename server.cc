@@ -1,11 +1,8 @@
 #include "server.h"
 
-
 #include <muduo/base/Atomic.h>
 #include <muduo/base/Logging.h>
 #include <muduo/net/EventLoop.h>
-
-#include <functional>
 
 using namespace muduo;
 using namespace muduo::net;
@@ -23,7 +20,7 @@ MemcacheServer::MemcacheServer(muduo::net::EventLoop* loop,
       server_(loop, InetAddress(options.tcpport), "muduo-memcached"),
       stats_(new Stats) {
     server_.setConnectionCallback(
-        std::bind(&MemcacheServer::onConnection, this, std::placeholders::_1));
+        std::bind(&MemcacheServer::onConnection, this, _1));
 }
 MemcacheServer::~MemcacheServer() {}
 
@@ -70,29 +67,31 @@ bool MemcacheServer::storeItem(const ItemPtr& item,
                 ItemPtr newItem(Item::makeItem(item->key(), oldItem->flags(),
                                                oldItem->rel_exptime(), newLen,
                                                g_cas.incrementAndGet()));
-                if(policy==Item::kAppend){
-                    newItem->append(oldItem->value(),oldItem->valueLength()-2);
-                    newItem->append(item->value(),item->valueLength());
-                }else{
-                    newItem->append(item->value(),item->valueLength());
-                    newItem->append(oldItem->value(),oldItem->valueLength()-2);
+                if (policy == Item::kAppend) {
+                    newItem->append(oldItem->value(),
+                                    oldItem->valueLength() - 2);
+                    newItem->append(item->value(), item->valueLength());
+                } else {
+                    newItem->append(item->value(), item->valueLength());
+                    newItem->append(oldItem->value(),
+                                    oldItem->valueLength() - 2);
                 }
-                assert(newItem->neededBytes()==0);
+                assert(newItem->neededBytes() == 0);
                 assert(newItem->endsWithCRLF());
                 items.erase(it);
                 items.insert(newItem);
-            }else{
+            } else {
                 return false;
             }
-        }else if(policy==Item::kCas){
-            if(*exists&&(*it)->cas()==item->cas()){
+        } else if (policy == Item::kCas) {
+            if (*exists && (*it)->cas() == item->cas()) {
                 item->setCas(g_cas.incrementAndGet());
                 items.erase(it);
                 items.insert(item);
-            }else{
+            } else {
                 return false;
             }
-        }else{
+        } else {
             assert(false);
         }
     }
@@ -124,5 +123,5 @@ void MemcacheServer::onConnection(const TcpConnectionPtr& conn) {
         MutexLockGuard lock(mutex_);
         assert(sessions_.find(conn->name()) != sessions_.end());
         sessions_.erase(conn->name());
-    }    
+    }
 }

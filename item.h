@@ -21,14 +21,15 @@ class Item;
 using ItemPtr = std::shared_ptr<Item>;
 using ConstItemPtr = std::shared_ptr<const Item>;
 
+namespace QYJ{
 struct noncopyable {
     noncopyable() = default;
     ~noncopyable() = default;
     noncopyable(const noncopyable&) = delete;
     const noncopyable& operator=(const noncopyable&) = delete;
 };
-
-class Item : noncopyable {
+}
+class Item : QYJ::noncopyable {
    public:
     enum UpdatePolicy {
         kInvalid,   //值无效

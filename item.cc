@@ -3,7 +3,7 @@
 #include <muduo/base/LogStream.h>
 #include <muduo/net/Buffer.h>
 
-#include <unordered_map>
+#include<boost/functional/hash/hash.hpp>
 
 #include <stdio.h>
 #include <string.h>
@@ -49,5 +49,5 @@ void Item::resetKey(StringPiece k){
     keylen_=k.size();
     receivedBytes_=0;
     append(k.data(),k.size());
-    hash_=std::hash<muduo::string>{}(k.as_string());
+    hash_=boost::hash_range(k.begin(),k.end()) ;
 }

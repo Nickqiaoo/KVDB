@@ -2,17 +2,16 @@
 #define SERVER_H__
 
 #include "item.h"
-#include"session.h"
+#include "session.h"
 
 #include <muduo/base/Mutex.h>
 #include <muduo/net/TcpServer.h>
 
 #include <array>
-#include <memory>
 #include <unordered_map>
 #include <unordered_set>
 
-class MemcacheServer : noncopyable {
+class MemcacheServer : QYJ::noncopyable {
    public:
     struct Options {
         Options();

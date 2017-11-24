@@ -31,13 +31,13 @@ struct noncopyable {
 class Item : noncopyable {
    public:
     enum UpdatePolicy {
-        kInvalid,
-        kSet,
-        kAdd,
-        kReplace,
-        kAppend,
-        kPrepend,
-        kCas,
+        kInvalid,   //值无效
+        kSet,   //设置键值
+        kAdd,   //增加键
+        kReplace,   //替换键
+        kAppend,    //追加键值
+        kPrepend,   //在前面追加键值
+        kCas,   //设置编号
     };
 
     static ItemPtr makeItem(StringPiece keyarg, uint32_t flagsArg,
@@ -50,7 +50,7 @@ class Item : noncopyable {
          uint64_t casArg);
     ~Item() { ::free(data_); }
 
-    StringPiece key() const { return StringPiece(data_, keylen_); }
+    StringPiece key() const { return StringPiece(data_, keylen_); } //返回键
 
     uint32_t flags() const { return flags_; }
 
@@ -65,23 +65,23 @@ class Item : noncopyable {
     size_t neededBytes() const { return totalLen() - receivedBytes_; }
     void append(const char* data, size_t len);
 
-    bool endsWithCRLF() const {
+    bool endsWithCRLF() const { //判断是否crlf结尾
         return receivedBytes_ == totalLen() && data_[totalLen() - 2] == '\r' &&
                data_[totalLen() - 1] == '\n';
     }
     void output(muduo::net::Buffer* out, bool needCas = false) const;
-    void resetKey(StringPiece k);
+    void resetKey(StringPiece k);   //重置键
 
    private:
-    int totalLen() const { return keylen_ + valuelen_; }
-    int keylen_;
-    const uint32_t flags_;
-    const int rel_exptime_;
-    const int valuelen_;
-    int receivedBytes_;
-    uint64_t cas_;
-    size_t hash_;
-    char* data_;
+    int totalLen() const { return keylen_ + valuelen_; }    //总长度
+    int keylen_;    //键长度
+    const uint32_t flags_  ;    //参数    
+    const int rel_exptime_; //超时时间
+    const int valuelen_;    //值长度
+    int receivedBytes_; //接收字节数
+    uint64_t cas_;  //编号
+    size_t hash_;   //hash值
+    char* data_;    //值
 };
 
 #endif

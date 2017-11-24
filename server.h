@@ -24,15 +24,15 @@ class MemcacheServer : noncopyable {
     MemcacheServer(muduo::net::EventLoop* loop, const Options&);
     ~MemcacheServer();
 
-    void setThreadNum(int threads) { server_.setThreadNum(threads); }
+    void setThreadNum(int threads) { server_.setThreadNum(threads);}
     void start();
     void stop();
 
     time_t startTime() const { return startTime_; }
 
-    bool storeItem(const ItemPtr& item, Item::UpdatePolicy policy, bool* exits);
-    ConstItemPtr getItem(const ConstItemPtr& key) const;
-    bool deleteItem(const ConstItemPtr& key);
+    bool storeItem(const ItemPtr& item, Item::UpdatePolicy policy, bool* exits);    //存
+    ConstItemPtr getItem(const ConstItemPtr& key) const;    //取
+    bool deleteItem(const ConstItemPtr& key);   //删
 
    private:
     void onConnection(const muduo::net::TcpConnectionPtr& conn);
@@ -42,14 +42,14 @@ class MemcacheServer : noncopyable {
     Options options_;
     const time_t startTime_;
     mutable muduo::MutexLock mutex_;
-    std::unordered_map<string, SessionPtr> sessions_;
+    std::unordered_map<string, SessionPtr> sessions_;   //一个连接对应一个Session
 
     struct Hash {
         size_t operator()(const ConstItemPtr& x) const { return x->hash(); }
     };
 
     struct Equal {
-        bool operator()(const ConstItemPtr& x, const ConstItemPtr& y) {
+        bool operator()(const ConstItemPtr& x, const ConstItemPtr& y) const {
             return x->hash() == y->hash();
         }
     };

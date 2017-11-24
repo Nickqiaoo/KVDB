@@ -46,8 +46,8 @@ class Session : noncopyable, public std::enable_shared_from_this<Session> {
         kDiscardValue,
     };
     enum Protocol {
-        kAscii,
-        kBinary,
+        kAscii, //字节协议
+        kBinary,    //二进制协议
         kAuto,
     };
     void onMessage(const muduo::net::TcpConnectionPtr& conn,

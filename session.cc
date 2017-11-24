@@ -265,7 +265,7 @@ bool Session::doUpdate(Session::Tokenizer::iterator& beg,Session::Tokenizer::ite
 void Session::doDelete(Session::Tokenizer::iterator& beg,Session::Tokenizer::iterator end){
     assert(command_=="delete");
     StringPiece key=*beg;
-    bool good=key.size()<=kLongestKey;
+    bool good=key.size()<=kLongestKeySize;
     ++beg;
     if(!good){
         reply("CLIENT_ERROR bad command line format\r\n");

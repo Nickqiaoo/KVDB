@@ -183,7 +183,9 @@ bool Session::processRequest(StringPiece request) {
             conn_->outputBuffer()->shrink(65536 + outputBuf_.readableBytes());
         }
         conn_->send(&outputBuf_);
-    } else if (command_ == "version") {
+    }else if(command_=="delete"){
+        doDelete(beg,tok.end());
+    }else if (command_ == "version") {
         reply("version 0.01 muduo\r\n");
     } else if (command_ == "shutdown") {
         conn_->shutdown();
@@ -226,6 +228,7 @@ bool Session::doUpdate(Session::Tokenizer::iterator& beg,
         assert(false);
 
     StringPiece key = (*beg);
+    ++beg;
     bool good = key.size() <= kLongestKeySize;
 
     uint32_t flags = 0;
